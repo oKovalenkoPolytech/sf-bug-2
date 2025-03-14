@@ -1,8 +1,7 @@
+import {useEffect} from 'react';
 import { registerLicense } from '@syncfusion/ej2-base';
-import { DocumentEditorContainerComponent, Toolbar, SpellChecker, Inject, ToolbarItem, CustomToolbarItemModel, DocumentEditor } from '@syncfusion/ej2-react-documenteditor';
+import { DocumentEditorContainerComponent, Toolbar, SpellChecker, Inject, ToolbarItem, CustomToolbarItemModel } from '@syncfusion/ej2-react-documenteditor';
 import { ClickEventArgs } from '@syncfusion/ej2-navigations';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import '@syncfusion/ej2-base/styles/material.css';
 import '@syncfusion/ej2-buttons/styles/material.css';
 import '@syncfusion/ej2-inputs/styles/material.css';
@@ -13,42 +12,18 @@ import '@syncfusion/ej2-splitbuttons/styles/material.css';
 import '@syncfusion/ej2-dropdowns/styles/material.css';
 import '@syncfusion/ej2-react-documenteditor/styles/material.css';
 import './App.css'
-import {useEffect, useState} from 'react';
 
 // Register Syncfusion license
 registerLicense(import.meta.env.VITE_SYNCFUSION_KEY);
 
 const CONTAINER_ID = 'documenteditor';
 
-const insertedText = [
-  {
-    text: '\n'
-  },
-  {
-    text: 'Heading',
-    style: 'ESHeadingCenter'
-  },
-  {
-    text: '\n'
-  },
-  {
-    text: 'This is a test text',
-    style: 'EscribersNormal'
-  },
-  {
-    text: '\n'
-  },
-  {
-    text: 'Q  ',
-    style: 'ESQandA'
-  }
-]
+const insertedText ='(Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the)'
+const commentText = 'test'
+const bookmarkName = 'test'
 
 function App() {
   let documentEditorContainer: DocumentEditorContainerComponent | null = null;
-  const [currentState, setCurrentState] = useState({});
-
-
 
   useEffect(() => {
     componentDidMount()
@@ -68,8 +43,8 @@ function App() {
   const handleToolbarClick = (args: ClickEventArgs): void => {
     if (args.item.id === 'insert_test') {
       insertText();
-    } else if (args.item.id === 'log_sfdt') {
-      logSFDT();
+    } else if (args.item.id === 'download') {
+      downloadFile();
     }
   };
 
@@ -78,20 +53,24 @@ function App() {
     
     const documentEditor = documentEditorContainer.documentEditor;
     if (!documentEditor) return;
-
     documentEditor.editorHistory.beginUndoAction();
+    documentEditor.editor.handleEnterKey();
+    documentEditor.editor.insertText(insertedText);
+    documentEditor.selection.selectLine();
+    documentEditor.editor.insertComment(commentText);
+    documentEditor.selection.moveToLineEnd();
 
-    insertedText.forEach((item) => {
-        if (item.style) {
-          documentEditor.editor.applyStyle(item.style, true);
-        }
-
-      documentEditor.editor.insertText(item.text);
-
-    })
+    documentEditor.selection.selectLine();
+    documentEditor.editor.insertBookmark(bookmarkName + Math.random());
+    documentEditor.selection.moveToLineEnd();
 
     documentEditor.editorHistory.endUndoAction();
   };
+
+  const downloadFile = () => {
+    if (!documentEditorContainer) return;
+    documentEditorContainer.documentEditor.save('doc', 'Docx');
+  }
 
   const toolbarItems: (ToolbarItem | CustomToolbarItemModel)[] = [
     'New',
@@ -107,29 +86,23 @@ function App() {
     } as CustomToolbarItemModel,
     {
       prefixIcon: '',
-      tooltipText: 'Log SFDT',
-      text: 'Log SFDT',
-      id: 'log_sfdt'
+      tooltipText: 'Download',
+      text: 'Download',
+      id: 'download'
     } as CustomToolbarItemModel
   ];
 
-  const logSFDT = () => {
-    if (!documentEditorContainer) return;
-    const documentEditor = documentEditorContainer.documentEditor;
-    if (!documentEditor) return;
-    const sfdt: any = JSON.parse(documentEditor.serialize());
-    setCurrentState(sfdt.sec[0].b);
-  }
+
 
   return (
-    <div style={{ height: '100vh', width: '100%', display: 'flex' }}>
+    <div>
       <DocumentEditorContainerComponent
         id={CONTAINER_ID}
-        height="100%"
-        width="70%"
+        height="100vh"
+        width="100%"
         enableToolbar={true}
         enableSpellCheck={true}
-        ref={(scope) => {
+        ref={(scope: DocumentEditorContainerComponent) => {
           documentEditorContainer = scope;
         }}
         serviceUrl="https://ej2services.syncfusion.com/production/web-services/api/documenteditor/"
@@ -140,15 +113,6 @@ function App() {
       >
         <Inject services={[Toolbar, SpellChecker]}></Inject>
       </DocumentEditorContainerComponent>
-      <div style={{ width: '30%', height: '100%', overflow: 'auto', backgroundColor: '#1E1E1E' }}>
-        <SyntaxHighlighter
-          language="json"
-          style={vscDarkPlus}
-          customStyle={{ margin: 0, minHeight: '100%' }}
-        >
-          {JSON.stringify(currentState, null, 2)}
-        </SyntaxHighlighter>
-      </div>
     </div>
   );
 }
